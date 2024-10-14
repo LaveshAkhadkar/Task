@@ -19,7 +19,11 @@ user_query = st.text_input("You:", key="input")
 
 genai.configure(api_key=os.getenv("gemini"))
 
-model = genai.GenerativeModel("gemini-1.5-flash", system_instruction="Always answer in short 2-3 sentences.")
+@st.cache_resource
+def get_model():
+    return genai.GenerativeModel("gemini-1.5-flash", system_instruction="Always answer in short 2-3 sentences.")
+
+model = get_model()
 chat = model.start_chat(history=st.session_state.ghistory)
 
 #if user clicks send or presses enter with user query in input
