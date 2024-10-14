@@ -1,8 +1,17 @@
 from transformers import BartForConditionalGeneration, BartTokenizer
 import torch
+from streamlit import cache_resource
 
-expansion_model = BartForConditionalGeneration.from_pretrained('Lavesh-Akhadkar/expander')
-tokenizer = BartTokenizer.from_pretrained('Lavesh-Akhadkar/expanderTokenizer')
+@cache_resource
+def load_expansion_model():
+    return BartForConditionalGeneration.from_pretrained('Lavesh-Akhadkar/expander')
+
+@cache_resource
+def load_tokenizer():
+    return BartTokenizer.from_pretrained('Lavesh-Akhadkar/expanderTokenizer')
+
+expansion_model = load_expansion_model()
+tokenizer = load_tokenizer()
 
 def generate_expanded_query(query, summary):
     input_text = f"{query} {summary}" if summary else query
