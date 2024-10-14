@@ -2,6 +2,7 @@ from transformers import BertTokenizer
 import tensorflow as tf
 from huggingface_hub import from_pretrained_keras
 
+loaded_model.built = True
 loaded_model = from_pretrained_keras("Lavesh-Akhadkar/hierarchical-bert-model")
 
 dummy_input_ids = tf.zeros((1, 128), dtype=tf.int32)
