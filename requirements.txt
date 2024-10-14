@@ -2,5 +2,5 @@ python-dotenv
 google-generativeai
 transformers==4.45.2
 torch==2.2.2
-tensorflow====2.16.1
+tensorflow==2.16.1
 huggingface_hub==0.25.1
