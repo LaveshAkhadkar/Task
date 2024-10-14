@@ -1,50 +1,20 @@
 from transformers import BertTokenizer
 import tensorflow as tf
 from huggingface_hub import from_pretrained_keras
+from streamlit import cache_resource
 
-from transformers import TFBertModel
-import tensorflow as tf
-from huggingface_hub import KerasModelHubMixin
+@cache_resource
+def load_model():
+    model = from_pretrained_keras("Lavesh-Akhadkar/hierarchical-bert-model")
+    return model
 
-class HierarchicalBERTModel(tf.keras.Model, KerasModelHubMixin):
-    def __init__(self, num_cat1=6, num_cat2=21, bert_model_name='bert-base-uncased'):
-        super(HierarchicalBERTModel, self).__init__()
-        self.bert = TFBertModel.from_pretrained(bert_model_name)
-        self.cat1_classifier = tf.keras.layers.Dense(num_cat1, activation='softmax')
-        self.cat2_classifier = tf.keras.layers.Dense(num_cat2, activation='softmax')
+@cache_resource
+def load_tokenizer():
+    return BertTokenizer.from_pretrained("bert-base-uncased")
 
-    def call(self, inputs):
-        # Allow inputs in both tuple and dict format
-        if isinstance(inputs, dict):
-            input_ids = inputs['input_ids']
-            attention_mask = inputs['attention_mask']
-        else:
-            input_ids, attention_mask = inputs
-        bert_output = self.bert.bert(input_ids=input_ids, attention_mask=attention_mask)
-        cls_token_output = bert_output.pooler_output
+loaded_model = load_model()
 
-        cat1_logits = self.cat1_classifier(cls_token_output)
-        cat2_logits = self.cat2_classifier(cls_token_output)
-
-        return cat1_logits, cat2_logits
-
-
-
-loaded_model = HierarchicalBERTModel()
-
-loaded_model = from_pretrained_keras("Lavesh-Akhadkar/hierarchical-bert-model")
-
-dummy_input_ids = tf.zeros((1, 128), dtype=tf.int32)
-dummy_attention_mask = tf.zeros((1, 128), dtype=tf.int32)
-
-loaded_model((dummy_input_ids, dummy_attention_mask))
-
-dummy_input_ids = tf.zeros((1, 128), dtype=tf.int32)
-dummy_attention_mask = tf.zeros((1, 128), dtype=tf.int32)
-
-loaded_model((dummy_input_ids, dummy_attention_mask))
-
-classification_tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
+classification_tokenizer = load_tokenizer()
 
 def tokenize_data(text, max_len=128):
     return classification_tokenizer(
