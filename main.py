@@ -7,7 +7,7 @@ from classification import predict_with_loaded_model
 
 load_dotenv()
 
-st.title("Chatbot with BERT Classification and BART Expansion")
+st.title("Chatbot with BERT Classification and Expansion")
 st.write("Classification and expansion start after 2nd message by the user")
 
 if "history" not in st.session_state:
