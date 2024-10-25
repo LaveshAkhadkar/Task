@@ -12,6 +12,7 @@ def save_history(history):
     with open("history.json", "w") as f:
         json.dump(history, f, indent=4)
 
+
 def clear_history():
     with open("history.json", "w") as f:
         json.dump([], f, indent=4)
@@ -39,10 +40,9 @@ def generate_expanded_query(user_query):
     history = history[-20:]
 
     model = genai.GenerativeModel(
-        "gemini-1.5-pro-latest",
+        "gemini-1.5-flash",
         system_instruction="""
         Expand the user query using relevant context from the conversation history.
-        Replace specific entities with placeholders where appropriate.
         
         Return only the expanded query in JSON format:
         {"expanded_query": "Expanded query text here"}
@@ -55,9 +55,36 @@ def generate_expanded_query(user_query):
 
     history = add_to_history(history, "user", user_query)
     history = add_to_history(history, "model", expanded_query)
-    clean_response = response.text.strip().replace("```json", "").replace("```", "").strip()
-    
-    #load in json format
+    clean_response = (
+        response.text.strip().replace("```json", "").replace("```", "").strip()
+    )
+
+    # load in json format
+    expanded_query = json.loads(clean_response)
+    expanded_query = expanded_query["expanded_query"]
+    return expanded_query
+
+
+def generate_expanded_query_history(user_query, history=[]):
+    history = history[-20:]
+
+    model = genai.GenerativeModel(
+        "gemini-1.5-flash",
+        system_instruction="""
+        Expand the user query using relevant context from the conversation history.
+        
+        Return only the expanded query in JSON format:
+        {"expanded_query": "Expanded query text here"}
+        """,
+    )
+
+    chat = model.start_chat(history=history)
+    response = chat.send_message(user_query)
+
+    clean_response = (
+        response.text.strip().replace("```json", "").replace("```", "").strip()
+    )
+
     expanded_query = json.loads(clean_response)
     expanded_query = expanded_query["expanded_query"]
     return expanded_query
