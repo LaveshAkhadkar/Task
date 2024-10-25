@@ -1,25 +1,63 @@
-from transformers import BartForConditionalGeneration, BartTokenizer
-import torch
-from streamlit import cache_resource
+import json
+import google.generativeai as genai
+import os
+from dotenv import load_dotenv
 
-@cache_resource
-def load_expansion_model():
-    return BartForConditionalGeneration.from_pretrained('Lavesh-Akhadkar/expander')
+load_dotenv()
 
-@cache_resource
-def load_tokenizer():
-    return BartTokenizer.from_pretrained('Lavesh-Akhadkar/expanderTokenizer')
+genai.configure(api_key=os.environ["gemini"])
 
-expansion_model = load_expansion_model()
-tokenizer = load_tokenizer()
 
-def generate_expanded_query(query, summary):
-    input_text = f"{query} {summary}" if summary else query
+def save_history(history):
+    with open("history.json", "w") as f:
+        json.dump(history, f, indent=4)
 
-    inputs = tokenizer(input_text, return_tensors='pt', max_length=512, padding='max_length', truncation=True)
+def clear_history():
+    with open("history.json", "w") as f:
+        json.dump([], f, indent=4)
 
-    with torch.no_grad():
-        outputs = expansion_model.generate(**inputs)
 
-    expanded_query = tokenizer.decode(outputs[0], skip_special_tokens=True)
+def load_history():
+    try:
+        with open("history.json", "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
+def add_to_history(history, role, message):
+    history.append({"role": role, "parts": message})
+    if len(history) > 20:
+        history = history[-20:]
+    save_history(history)
+    return history
+
+
+def generate_expanded_query(user_query):
+
+    history = load_history()
+    history = history[-20:]
+
+    model = genai.GenerativeModel(
+        "gemini-1.5-pro-latest",
+        system_instruction="""
+        Expand the user query using relevant context from the conversation history.
+        Replace specific entities with placeholders where appropriate.
+        
+        Return only the expanded query in JSON format:
+        {"expanded_query": "Expanded query text here"}
+        """,
+    )
+
+    chat = model.start_chat(history=history)
+    response = chat.send_message(user_query)
+    expanded_query = response.text.strip()
+
+    history = add_to_history(history, "user", user_query)
+    history = add_to_history(history, "model", expanded_query)
+    clean_response = response.text.strip().replace("```json", "").replace("```", "").strip()
+    
+    #load in json format
+    expanded_query = json.loads(clean_response)
+    expanded_query = expanded_query["expanded_query"]
     return expanded_query
